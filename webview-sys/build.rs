@@ -4,9 +4,22 @@ extern crate pkg_config;
 use std::env;
 
 fn main() {
-    let mut build = cc::Build::new();
-
     let target = env::var("TARGET").unwrap();
+
+    // if crosscompiling from unix to windows, link to the dll
+    if cfg!(unix) && target.contains("windows") && cfg!(feature = "edge") {
+        println!(
+            "cargo:rustc-link-search=native={}",
+            env!("CARGO_MANIFEST_DIR")
+        ); // still haven't figured out how to specify a relative path
+        println!("cargo:rustc-link-lib=dylib=webview_edge");
+        for &lib in &["windowsapp", "user32", "gdi32", "ole32"] {
+            println!("cargo:rustc-link-lib={}", lib);
+        }
+        return;
+    }
+
+    let mut build = cc::Build::new();
 
     build
         .include("webview.h")
